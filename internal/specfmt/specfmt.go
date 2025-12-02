@@ -125,12 +125,16 @@ type Options struct {
 
 // FormatFile reads an OpenAPI YAML file, refactors inline response schemas
 // into components/schemas, and writes the result to outPath.
-func FormatFile(inPath, outPath string, opts Options) error {
+func FormatFile(inPath, outPath string, opts Options) (err error) {
 	f, err := os.Open(inPath)
 	if err != nil {
 		return fmt.Errorf("open input: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close input: %w", cerr)
+		}
+	}()
 
 	root, err := parseYAML(f)
 	if err != nil {
@@ -160,7 +164,11 @@ func FormatFile(inPath, outPath string, opts Options) error {
 	if err != nil {
 		return fmt.Errorf("create output: %w", err)
 	}
-	defer out.Close()
+	defer func() {
+		if cerr := out.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close output: %w", cerr)
+		}
+	}()
 
 	if err := writeYAML(out, root); err != nil {
 		return err
@@ -184,9 +192,14 @@ func parseYAML(r io.Reader) (*yaml.Node, error) {
 func writeYAML(w io.Writer, root *yaml.Node) error {
 	enc := yaml.NewEncoder(w)
 	enc.SetIndent(2)
-	defer enc.Close()
+	var err error
+	defer func() {
+		if cerr := enc.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close encoder: %w", cerr)
+		}
+	}()
 
-	if err := enc.Encode(root); err != nil {
+	if err = enc.Encode(root); err != nil {
 		return fmt.Errorf("encode YAML: %w", err)
 	}
 	return nil
