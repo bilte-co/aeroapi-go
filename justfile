@@ -3,6 +3,9 @@ set shell := ["bash", "-cu"]
 gen:
     go generate ./...
 
+format:
+    go run cmd/specfmt/main.go format api.yaml -o formatted.yaml -v
+
 test:
 	@echo "Running tests..."
 	go test -v ./...
