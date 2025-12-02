@@ -36,4 +36,9 @@ release version:
 	just check
 	@echo "Tagging v{{version}}..."
 	git tag "v{{version}}"
-	@echo "Done! Now run: git push origin main --tags"
+	@echo "Done! Now run: git push origin main --tags && just publish {{version}}"
+
+# Trigger Go module proxy indexing after pushing a tag
+publish version:
+	@echo "Publishing v{{version}} to Go module proxy..."
+	GOPROXY=proxy.golang.org go list -m github.com/bilte-co/aeroapi-go@v{{version}}
